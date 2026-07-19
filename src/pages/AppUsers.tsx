@@ -8,6 +8,8 @@ interface AppUser {
   email: string;
   createdAt: number;
   lastLogin?: number;
+  pairingCode?: string;
+  sosSentCount?: number;
 }
 
 export default function AppUsers() {
@@ -15,28 +17,46 @@ export default function AppUsers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  // Lấy danh sách app users từ Realtime DB
+  // Lấy danh sách app users và extra data từ Realtime DB
   useEffect(() => {
     const usersRef = ref(db, 'app_users');
-    const unsubscribe = onValue(usersRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list: AppUser[] = Object.values(data);
-        // Sắp xếp mới nhất lên đầu
-        list.sort((a, b) => b.createdAt - a.createdAt);
-        setAppUsers(list);
-      } else {
-        setAppUsers([]);
-      }
+    const extraRef = ref(db, 'users');
+    let appUsersData: Record<string, AppUser> = {};
+    let extraData: Record<string, any> = {};
+
+    const updateState = () => {
+      const list: AppUser[] = Object.values(appUsersData).map(u => ({
+        ...u,
+        pairingCode: extraData[u.uid]?.pairingCode || 'Chưa có',
+        sosSentCount: extraData[u.uid]?.sosSentCount || 0
+      }));
+      // Sắp xếp mới nhất lên đầu
+      list.sort((a, b) => b.createdAt - a.createdAt);
+      setAppUsers(list);
+    };
+
+    const unsubAppUsers = onValue(usersRef, (snapshot) => {
+      appUsersData = snapshot.val() || {};
+      updateState();
       setLoading(false);
     });
-    return () => unsubscribe();
+
+    const unsubExtra = onValue(extraRef, (snapshot) => {
+      extraData = snapshot.val() || {};
+      updateState();
+    });
+
+    return () => {
+      unsubAppUsers();
+      unsubExtra();
+    };
   }, []);
 
   const handleDeleteUser = async (uid: string, email: string) => {
     if (window.confirm(`Bạn có chắc muốn xóa dữ liệu của người dùng App: ${email}?\n\n(Lưu ý: Thao tác này chỉ xóa dữ liệu trong Database. Tài khoản đăng nhập vẫn tồn tại trên Firebase Auth)`)) {
       try {
         await remove(ref(db, `app_users/${uid}`));
+        await remove(ref(db, `users/${uid}`));
       } catch (err) {
         alert('Lỗi khi xóa: ' + err);
       }
@@ -87,6 +107,8 @@ export default function AppUsers() {
                 <thead>
                   <tr>
                     <th>Email</th>
+                    <th>Mã kết nối</th>
+                    <th>Số lần SOS</th>
                     <th>Ngày đăng ký</th>
                     <th>Hành động</th>
                   </tr>
@@ -96,6 +118,12 @@ export default function AppUsers() {
                     <tr key={user.uid}>
                       <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                         {user.email}
+                      </td>
+                      <td style={{ letterSpacing: 1, fontFamily: 'monospace' }}>
+                        {user.pairingCode}
+                      </td>
+                      <td>
+                        {user.sosSentCount}
                       </td>
                       <td className="td-time">
                         {new Date(user.createdAt).toLocaleString('vi-VN')}

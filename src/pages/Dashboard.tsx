@@ -1,7 +1,8 @@
 import { usePairingSessions } from '../hooks/usePairingSessions';
 import StatCard from '../components/StatCard';
 import SosAlert from '../components/SosAlert';
-import { Activity, AlertTriangle, CheckCircle, Wifi, Clock } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle, Wifi, Clock, PieChart as PieChartIcon } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
@@ -23,6 +24,11 @@ export default function Dashboard() {
   const recentActivity = [...sessions]
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, 10);
+
+  const pieData = [
+    { name: 'Khẩn cấp (SOS)', value: sosSessions.length, color: '#ef4444' },
+    { name: 'An toàn (Standby)', value: standbySessions.length, color: '#22c55e' }
+  ];
 
   return (
     <div>
@@ -182,8 +188,49 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right column – Activity Feed */}
+        {/* Right column – Activity Feed & Charts */}
         <div className="dashboard-right">
+          {/* Biểu đồ */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div className="card-header">
+              <h3 className="card-title">
+                <PieChartIcon size={16} color="var(--accent-primary)" />
+                Tỉ lệ trạng thái thiết bị
+              </h3>
+            </div>
+            <div className="card-body" style={{ height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {sessions.length === 0 ? (
+                <div className="empty-state" style={{ margin: 0, padding: 0 }}>
+                  <p>Chưa có dữ liệu thống kê</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={85}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#111827', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 8, color: '#f8fafc' }}
+                      itemStyle={{ color: '#e2e8f0' }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
           <div className="card" style={{ flex: 1 }}>
             <div className="card-header">
               <h3 className="card-title">

@@ -108,10 +108,17 @@ export default function DeviceTable({ sessions }: DeviceTableProps) {
                   <td className="td-code">{session.code}</td>
                   <td>
                     {session.status === 'SOS_ACTIVE' ? (
-                      <span className="badge badge-sos">
-                        <span className="badge-dot" />
-                        SOS ACTIVE
-                      </span>
+                      <div>
+                        <span className="badge badge-sos">
+                          <span className="badge-dot" />
+                          SOS ACTIVE
+                        </span>
+                        {session.acknowledged && (
+                          <div style={{ marginTop: 6, fontSize: 11, color: '#22c55e', fontWeight: 600 }}>
+                            ✓ Đã xác nhận
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <span className="badge badge-standby">
                         <span className="badge-dot" />

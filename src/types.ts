@@ -6,6 +6,8 @@ export interface PairingSession {
   longitude: number;
   address: string;
   timestamp: number;
+  acknowledged?: boolean;
+  acknowledgedAt?: number;
 }
 
 export interface AdminUser {
