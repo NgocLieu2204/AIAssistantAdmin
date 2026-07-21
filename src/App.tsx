@@ -14,7 +14,7 @@ import AppUsers from './pages/AppUsers';
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/': { title: 'Dashboard', subtitle: 'Tổng quan hệ thống giám sát AIVision' },
-  '/devices': { title: 'Thiết bị & Phiên kết nối', subtitle: 'Quản lý tất cả phiên ghép đôi đang hoạt động' },
+  '/devices': { title: 'Quản lý Thiết bị', subtitle: 'Danh sách tất cả các thiết bị đang kết nối' },
   '/map': { title: 'Bản đồ SOS', subtitle: 'Vị trí tất cả thiết bị trên bản đồ thời gian thực' },
   '/app-users': { title: 'Quản lý App User', subtitle: 'Danh sách người dùng đã đăng ký qua ứng dụng Android' },
   '/users': { title: 'Quản lý Admin', subtitle: 'Phân quyền và tài khoản quản trị hệ thống' },

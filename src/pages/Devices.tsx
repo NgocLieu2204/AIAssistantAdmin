@@ -11,7 +11,7 @@ export default function Devices() {
         <div className="card-header">
           <h3 className="card-title">
             <Monitor size={16} color="var(--accent-primary)" />
-            Danh sách thiết bị &amp; phiên kết nối
+            Danh sách thiết bị kết nối
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>

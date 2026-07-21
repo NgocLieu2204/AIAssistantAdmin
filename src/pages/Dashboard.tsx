@@ -1,8 +1,11 @@
+import { useState, useEffect, useRef } from 'react';
 import { usePairingSessions } from '../hooks/usePairingSessions';
 import StatCard from '../components/StatCard';
 import SosAlert from '../components/SosAlert';
-import { Activity, AlertTriangle, CheckCircle, Wifi, Clock, PieChart as PieChartIcon } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle, Wifi, PieChart as PieChartIcon, Volume2, VolumeX, Users } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { db } from '../firebase';
+import { ref, onValue } from 'firebase/database';
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
@@ -16,9 +19,46 @@ function timeAgo(ts: number): string {
 
 export default function Dashboard() {
   const { sessions, loading } = usePairingSessions();
+  const [totalUsers, setTotalUsers] = useState<number>(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const sosSessions = sessions.filter(s => s.status === 'SOS_ACTIVE');
   const standbySessions = sessions.filter(s => s.status === 'STANDBY');
+  const hasUnacknowledgedSos = sosSessions.some(s => !s.acknowledged);
+
+  useEffect(() => {
+    const usersRef = ref(db, 'app_users');
+    const unsubscribe = onValue(usersRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setTotalUsers(Object.keys(snapshot.val()).length);
+      } else {
+        setTotalUsers(0);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (hasUnacknowledgedSos && soundEnabled) {
+      if (!audioRef.current) {
+        const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+        audio.loop = true;
+        audioRef.current = audio;
+      }
+      audioRef.current.play().catch(e => console.log('Audio play blocked (needs user interaction):', e));
+    } else {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    }
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, [hasUnacknowledgedSos, soundEnabled]);
 
   // Recent activity: last 10 events by timestamp
   const recentActivity = [...sessions]
@@ -27,7 +67,7 @@ export default function Dashboard() {
 
   const pieData = [
     { name: 'Khẩn cấp (SOS)', value: sosSessions.length, color: '#ef4444' },
-    { name: 'An toàn (Standby)', value: standbySessions.length, color: '#22c55e' }
+    { name: 'Đang trực tuyến (Online)', value: standbySessions.length, color: '#22c55e' }
   ];
 
   return (
@@ -36,7 +76,7 @@ export default function Dashboard() {
       <div className="stats-grid">
         <StatCard
           value={sessions.length}
-          label="Tổng phiên kết nối"
+          label="Tổng thiết bị"
           icon={<Wifi size={22} />}
           iconColor="#6366f1"
           iconBg="rgba(99,102,241,0.15)"
@@ -65,13 +105,9 @@ export default function Dashboard() {
           badgeColor="#22c55e"
         />
         <StatCard
-          value={
-            sessions.length > 0
-              ? timeAgo(Math.max(...sessions.map(s => s.timestamp)))
-              : '—'
-          }
-          label="Cập nhật gần nhất"
-          icon={<Clock size={22} />}
+          value={totalUsers}
+          label="Tổng User App"
+          icon={<Users size={22} />}
           iconColor="#06b6d4"
           iconBg="rgba(6,182,212,0.12)"
           gradient="linear-gradient(90deg, #06b6d4, #6366f1)"
@@ -83,17 +119,39 @@ export default function Dashboard() {
         <div className="dashboard-left">
           {/* SOS Alerts */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="card-title">
-                <AlertTriangle size={16} color="#ef4444" />
-                Cảnh báo SOS đang hoạt động
-              </h3>
-              {sosSessions.length > 0 && (
-                <span className="badge badge-sos">
-                  <span className="badge-dot" />
-                  {sosSessions.length} khẩn cấp
-                </span>
-              )}
+            <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h3 className="card-title" style={{ margin: 0 }}>
+                  <AlertTriangle size={16} color="#ef4444" />
+                  Cảnh báo SOS
+                </h3>
+                {sosSessions.length > 0 && (
+                  <span className="badge badge-sos">
+                    <span className="badge-dot" />
+                    {sosSessions.length} khẩn cấp
+                  </span>
+                )}
+              </div>
+              <button 
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                style={{ 
+                  background: soundEnabled ? 'rgba(239,68,68,0.15)' : 'var(--bg-glass)',
+                  border: `1px solid ${soundEnabled ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`,
+                  color: soundEnabled ? '#ef4444' : 'var(--text-muted)',
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  transition: 'var(--transition)'
+                }}
+              >
+                {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                {soundEnabled ? 'Bật còi' : 'Tắt còi'}
+              </button>
             </div>
             <div className="card-body">
               {loading ? (
@@ -124,13 +182,14 @@ export default function Dashboard() {
             <div className="card-header">
               <h3 className="card-title">
                 <Wifi size={16} color="var(--accent-primary)" />
-                Tất cả phiên kết nối
+                Tất cả thiết bị kết nối
               </h3>
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                {sessions.length} phiên
+                {sessions.length} thiết bị
               </span>
             </div>
-            <div className="card-body">
+            <div className="card-body" style={{ padding: 0 }}>
+              <div style={{ padding: 20 }}>
               {loading ? (
                 <div className="loading-center">
                   <div className="spinner" />
@@ -184,6 +243,7 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>

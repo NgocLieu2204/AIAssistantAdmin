@@ -52,7 +52,7 @@ export default function Sidebar({ sosCount, userEmail }: SidebarProps) {
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
         >
           <Monitor size={18} className="nav-icon" />
-          Thiết bị / Phiên
+          Quản lý Thiết bị
         </NavLink>
 
         <NavLink
@@ -84,10 +84,7 @@ export default function Sidebar({ sosCount, userEmail }: SidebarProps) {
           Quản lý Admin
         </NavLink>
 
-        <div className="nav-item" style={{ cursor: 'default', opacity: 0.5 }}>
-          <Bell size={18} className="nav-icon" />
-          Thông báo
-        </div>
+
       </nav>
 
       {/* Footer user */}

@@ -291,8 +291,6 @@ export default function MapView() {
                   setSearchQuery(e.target.value);
                   setShowSuggestions(true);
                 }}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 style={{
                   width: '100%',
                   background: '#111827',
